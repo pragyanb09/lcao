@@ -1,7 +1,11 @@
+from operator import imod
 import webbrowser
 
 import numpy as np
 import plotly.graph_objects as go
+
+from PIL import Image
+import os
 
 a0 = 1.0
 
@@ -145,6 +149,53 @@ fig.update_layout(
         )
     ],
 )
+
+os.makedirs("frames")
+
+for i, sep in enumerate(seps):
+    prob, atom_A, atom_B = calc_bonding_orbital(sep)
+    prob_flat = prob.flatten()
+    
+    fig_frame = go.Figure(data=[
+        go.Isosurface(
+            x=X.flatten(),
+            y=Y.flatten(),
+            z=Z.flatten(),
+            value=prob_flat,
+            isomin=0.001, 
+            isomax=0.001
+            opacity=0.5,
+            colorscale="Blues",
+            caps=dict(x_show=False, y_show=False, z_show=False),
+            showscale=False,
+        ),
+        
+        go.Scatter3d(
+            x=[atom_A[0], atom_B[0]],
+            y=[atom_A[1], atom_B[1]],
+            z=[atom_A[2], atom_B[2]],
+            mode="markers",
+            marker=dict(size=8, color="red"),
+        ),
+    ])
+    
+    fig_frame.update_layout(
+        scene=dict(
+            xaxis=dict(showgrid=False, showbackground=False, showticklabels=False),
+            yaxis=dict(showgrid=False, showbackground=False, showticklabels=False),
+            zaxis=dict(showgrid=False, showbackground=False, showticklabels=False),
+            camera=dict(eye=dict(x=2, y=3, z=1)),
+        ),
+        showlegend=False,
+        margin=dict(l=0, r=0, b=0, t=0)
+    )
+    fig_frame.write_image(f'frames/frame_{i:03d}.png', width=800, height=600)
+
+images = []
+for i in range(len(seps)):
+    images.append(Image.open(f'frames/frame_{i:03d}.png'))
+    
+images[0].save('1s-hybridization.gif', save_all=True, append_images=images[1:], duration=100, loop=0)
 
 fig.write_html("1s-1s-moving-hybridization.html", auto_play=True)
 webbrowser.open("1s-1s-moving-hybridization.html")
